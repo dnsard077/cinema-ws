@@ -10,6 +10,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -158,7 +159,10 @@ public class DatabaseSeederTest {
         user.setUsername("user1");
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(reservationRepository.findAll()).thenReturn(Collections.emptyList());
-
+        List<Schedule> schedules = new ArrayList<>();
+        schedules.add(new Schedule());
+        schedules.add(new Schedule());
+        when(scheduleRepository.findAll()).thenReturn(schedules);
         // When
         databaseSeeder.run();
 

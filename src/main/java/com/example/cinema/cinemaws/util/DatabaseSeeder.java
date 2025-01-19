@@ -29,8 +29,11 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
+    private final PlanRepository planRepository; // Add PlanRepository
+    private final SubscriptionRepository subscriptionRepository; // Add SubscriptionRepository
     private final Faker faker = new Faker(new Locale("en-US"));
     private final PasswordEncoder passwordEncoder;
+
     @Value("${database.seeder.enabled}")
     private boolean isSeederEnabled;
 
@@ -49,7 +52,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             cinema.setContactNumber(faker.phoneNumber().phoneNumber());
             cinemaRepository.save(cinema);
         }
-
 
         log.info("Seeding Studio");
         for (Cinema cinema : cinemaRepository.findAll()) {
@@ -84,7 +86,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             movieRepository.save(movie);
         }
 
-
         log.info("Seeding Schedule");
         for (Movie movie : movieRepository.findAll()) {
             for (Studio studio : studioRepository.findAll()) {
@@ -92,61 +93,76 @@ public class DatabaseSeeder implements CommandLineRunner {
                 schedule.setMovie(movie);
                 schedule.setStudio(studio);
 
-
                 LocalDateTime startTime = faker.date().future(365, TimeUnit.DAYS).toInstant()
                         .atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-
-                int randomHour = ThreadLocalRandom.current().nextInt(0, 24);
-                int randomMinute = ThreadLocalRandom.current().nextInt(0, 60);
+                int randomHour = ThreadLocalRandom.current().nextInt(24);
+                int randomMinute = ThreadLocalRandom.current().nextInt(60);
                 startTime = startTime.withHour(randomHour).withMinute(randomMinute).withSecond(0).withNano(0);
-
                 schedule.setStartTime(startTime);
 
-
                 int durationInHours = ThreadLocalRandom.current().nextInt(2, 6);
-
-
-                int randomMinutes = ThreadLocalRandom.current().nextInt(0, 60);
-                int randomSeconds = ThreadLocalRandom.current().nextInt(0, 60);
-
-
-                LocalDateTime endTime = startTime.plusHours(durationInHours)
-                        .plusMinutes(randomMinutes)
-                        .plusSeconds(randomSeconds);
+                LocalDateTime endTime = startTime.plusHours(durationInHours);
                 schedule.setEndTime(endTime);
-
 
                 scheduleRepository.save(schedule);
             }
         }
 
-        log.info("Seeding User");
+        log.info("Seeding Plans");
+        // Seed subscription plans
+        for (int i = 0; i < 3; i++) {
+            Plan plan = new Plan();
+            plan.setName("Plan " + (i + 1));
+            plan.setDescription("Description for Plan " + (i + 1));
+            plan.setPrice(faker.number().randomDouble(2, 10, 100)); // Random price between 10 and 100
+            plan.setDuration(faker.number().numberBetween(30, 365)); // Duration in days
+            planRepository.save(plan);
+        }
+
+        log.info("Seeding Users");
         for (int i = 0; i < 5; i++) {
             User user = new User();
             user.setUsername(faker.name().username());
-            user.setPassword(passwordEncoder.encode("string"));
+            user.setPassword(passwordEncoder.encode("password")); // Use a more secure password
             user.setEmail(faker.internet().emailAddress());
             user.setRole(User.Role.CUSTOMER);
             userRepository.save(user);
+
+            // Create a subscription for each user
+            Subscription subscription = new Subscription();
+            subscription.setUser(user);
+            subscription.setPlan(planRepository.findAll().get(ThreadLocalRandom.current().nextInt((int) planRepository.count()))); // Randomly select a plan
+            subscription.setStartDate(LocalDateTime.now());
+            subscription.setEndDate(LocalDateTime.now().plusDays(subscription.getPlan().getDuration()));
+            subscription.setActive(true);
+            subscriptionRepository.save(subscription);
         }
 
         log.info("Seeding Reservation & Payment");
         for (User user : userRepository.findAll()) {
-            Reservation reservation = new Reservation();
-            reservation.setUser(user);
-            reservation.setReservationDate(faker.date().future(365, TimeUnit.DAYS).toInstant()
-                    .atZone(ZoneId.systemDefault()).toLocalDateTime());
-            reservation.setTotalAmount(faker.number().randomDouble(2, 1000, 10000000));
-            reservationRepository.save(reservation);
+            Schedule randomSchedule = scheduleRepository.findAll()
+                    .stream()
+                    .skip(ThreadLocalRandom.current().nextInt((int) scheduleRepository.count()))
+                    .findFirst()
+                    .orElse(null);
 
-            Payment payment = new Payment();
-            payment.setReservation(reservation);
-            payment.setPaymentMethod(faker.finance().creditCard());
-            payment.setPaymentStatus("Paid");
-            payment.setAmountPaid(faker.number().randomDouble(2, 1000, 10000000));
-            paymentRepository.save(payment);
+            if (randomSchedule != null) {
+                Reservation reservation = new Reservation();
+                reservation.setUser(user);
+                reservation.setReservationDate(LocalDateTime.now());
+                reservation.setSchedule(randomSchedule);
+                reservationRepository.save(reservation);
+
+                Payment payment = new Payment();
+                payment.setReservation(reservation);
+                payment.setPaymentMethod(faker.finance().creditCard());
+                payment.setPaymentStatus("Paid");
+                payment.setAmountPaid(faker.number().randomDouble(2, 100, 1000)); // Random amount between 100 and 1000
+                paymentRepository.save(payment);
+            }
         }
+
         log.info("Done Seeding");
     }
 }
