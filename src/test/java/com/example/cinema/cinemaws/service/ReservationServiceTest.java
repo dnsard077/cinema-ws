@@ -2,6 +2,7 @@ package com.example.cinema.cinemaws.service;
 
 import com.example.cinema.cinemaws.exception.ResponseException;
 import com.example.cinema.cinemaws.model.Reservation;
+import com.example.cinema.cinemaws.model.Schedule;
 import com.example.cinema.cinemaws.model.User;
 import com.example.cinema.cinemaws.repository.ReservationRepository;
 import com.example.cinema.cinemaws.repository.UserRepository;
@@ -46,7 +47,7 @@ class ReservationServiceTest {
         Reservation reservation = new Reservation();
         reservation.setUser(user);
         reservation.setReservationDate(LocalDateTime.now());
-        reservation.setTotalAmount(100.0);
+        reservation.setSchedule(new Schedule());
 
         when(userRepository.findById(eq(1L))).thenReturn(Optional.of(user));
         when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
@@ -116,12 +117,12 @@ class ReservationServiceTest {
         Reservation existingReservation = new Reservation();
         existingReservation.setReservationId(1L);
         existingReservation.setReservationDate(LocalDateTime.now());
-        existingReservation.setTotalAmount(100.0);
+        existingReservation.setSchedule(new Schedule());
         existingReservation.setUser(new User());
 
         Reservation reservationDetails = new Reservation();
         reservationDetails.setReservationDate(LocalDateTime.now().plusDays(1));
-        reservationDetails.setTotalAmount(150.0);
+        reservationDetails.setSchedule(new Schedule());
         reservationDetails.setUser(new User());
 
         when(reservationRepository.findById(eq(1L))).thenReturn(Optional.of(existingReservation));
@@ -132,7 +133,7 @@ class ReservationServiceTest {
 
         // Then
         assertEquals(reservationDetails.getReservationDate(), result.getReservationDate());
-        assertEquals(reservationDetails.getTotalAmount(), result.getTotalAmount());
+        assertEquals(reservationDetails.getSchedule(), result.getSchedule());
     }
 
     @Test

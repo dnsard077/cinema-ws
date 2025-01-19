@@ -69,14 +69,14 @@ public class PaymentController {
     @PostMapping("/checkout")
     public ResponseEntity<ApiResponseTO<String>> createCheckoutSession(@RequestBody Map<String, Object> request) {
         return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION, stripeService.createCheckoutSession(
-                (Long) request.get("amount"),
+                Long.valueOf(String.valueOf(request.get("amount"))),
                 (String) request.getOrDefault("currency", "usd"),
                 (String) request.get("productName")));
     }
 
     @PostMapping("/checkout/intent")
     public ResponseEntity<ApiResponseTO<Map<String, String>>> createCheckoutIntent(@RequestBody Map<String, Object> request) {
-        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION, stripeService.createPaymentIntent((Long) request.get("amount"), (String) request.getOrDefault("currency", "usd")));
+        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION, stripeService.createPaymentIntent(Long.valueOf(String.valueOf(request.get("amount"))), (String) request.getOrDefault("currency", "usd")));
     }
 
     @PostMapping("/webhook")

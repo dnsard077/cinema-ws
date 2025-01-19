@@ -23,6 +23,9 @@ public class Reservation extends AuditEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "schedule_id", nullable = false)
+    private Schedule schedule;
+
     private LocalDateTime reservationDate;
-    private Double totalAmount;
 }

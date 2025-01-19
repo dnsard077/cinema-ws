@@ -37,8 +37,8 @@ public class ReservationService {
                 .orElseThrow(() -> new ResponseException(ResponseCodeEn.RESOURCE_NOT_FOUND));
 
         existingReservation.setReservationDate(reservationDetails.getReservationDate());
-        existingReservation.setTotalAmount(reservationDetails.getTotalAmount());
         existingReservation.setUser(reservationDetails.getUser());
+        existingReservation.setSchedule(reservationDetails.getSchedule());
 
         return reservationRepository.save(existingReservation);
     }

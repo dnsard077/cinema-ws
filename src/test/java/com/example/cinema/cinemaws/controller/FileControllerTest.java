@@ -1,6 +1,7 @@
 package com.example.cinema.cinemaws.controller;
 
 import com.example.cinema.cinemaws.dto.ApiResponseTO;
+import com.example.cinema.cinemaws.dto.FileUploadTO;
 import com.example.cinema.cinemaws.dto.ResponseCodeEn;
 import com.example.cinema.cinemaws.service.ApiResponseFactory;
 import com.example.cinema.cinemaws.service.FileService;
@@ -64,7 +65,7 @@ class FileControllerTest {
         ResponseEntity<ApiResponseTO<Object>> response = fileController.uploadFile(file);
 
         // Then
-        verify(fileService).uploadFile(file);
+        verify(fileService).uploadFile(FileUploadTO.builder().file(file).build());
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedApiResponse, response.getBody());
     }

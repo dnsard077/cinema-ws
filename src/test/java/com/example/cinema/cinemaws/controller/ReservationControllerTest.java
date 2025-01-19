@@ -3,6 +3,7 @@ package com.example.cinema.cinemaws.controller;
 import com.example.cinema.cinemaws.dto.ApiResponseTO;
 import com.example.cinema.cinemaws.dto.ResponseCodeEn;
 import com.example.cinema.cinemaws.model.Reservation;
+import com.example.cinema.cinemaws.model.Schedule;
 import com.example.cinema.cinemaws.model.User;
 import com.example.cinema.cinemaws.service.ApiResponseFactory;
 import com.example.cinema.cinemaws.service.ReservationService;
@@ -42,7 +43,7 @@ public class ReservationControllerTest {
         reservation.setReservationId(1L);
         reservation.setUser(new User());
         reservation.setReservationDate(LocalDateTime.now());
-        reservation.setTotalAmount(100.0);
+        reservation.setSchedule(new Schedule());
     }
 
     @Test

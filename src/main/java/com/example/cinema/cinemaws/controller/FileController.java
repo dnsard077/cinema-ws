@@ -1,6 +1,7 @@
 package com.example.cinema.cinemaws.controller;
 
 import com.example.cinema.cinemaws.dto.ApiResponseTO;
+import com.example.cinema.cinemaws.dto.FileUploadTO;
 import com.example.cinema.cinemaws.dto.ResponseCodeEn;
 import com.example.cinema.cinemaws.service.ApiResponseFactory;
 import com.example.cinema.cinemaws.service.FileService;
@@ -24,8 +25,12 @@ public class FileController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseTO<Object>> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        fileService.uploadFile(file);
-        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION);
+        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION, fileService.uploadFile(
+                FileUploadTO.builder()
+                        .filePath("media/")
+                        .file(file)
+                        .build())
+        );
     }
 
     @GetMapping("/download/{fileName}")

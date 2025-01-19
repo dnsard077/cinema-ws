@@ -3,6 +3,7 @@ package com.example.cinema.cinemaws.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -11,7 +12,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 public class RedisService {
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
     public void set(String key, String value) {
         log.info("Setting value in Redis: key={}, value={}", key, value);
