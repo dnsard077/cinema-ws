@@ -12,17 +12,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 class FileControllerTest {
 
@@ -35,9 +37,6 @@ class FileControllerTest {
     @Mock
     private ApiResponseFactory apiResponseFactory;
 
-    @Mock
-    private MultipartFile file;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -47,25 +46,35 @@ class FileControllerTest {
     void givenValidFile_whenUploadFile_thenReturnSuccessResponse() throws IOException {
         // Given
         String fileName = "testFile.txt";
-        when(file.getOriginalFilename()).thenReturn(fileName);
-        when(file.getInputStream()).thenReturn(new ByteArrayInputStream("test content".getBytes()));
-        when(file.getSize()).thenReturn(12L);
-        when(file.getContentType()).thenReturn("text/plain");
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                fileName,
+                MediaType.TEXT_PLAIN_VALUE,
+                "test content".getBytes()
+        );
 
-        ApiResponseTO<Object> expectedApiResponse = ApiResponseTO.<Object>builder()
+        String uploadedFileName = fileName + "_someUUID";
+        when(fileService.uploadFile(any(FileUploadTO.class))).thenReturn(uploadedFileName);
+        ApiResponseTO<String> expectedApiResponse = ApiResponseTO.<String>builder()
                 .code(ResponseCodeEn.SUCCESS_OPERATION.getHttpStatus().value())
                 .responseCode(ResponseCodeEn.SUCCESS_OPERATION.getCode())
                 .message("success.default")
-                .data(null)
+                .data(uploadedFileName)
                 .build();
 
-        when(apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_OPERATION)).thenReturn(ResponseEntity.ok(expectedApiResponse));
+        when(apiResponseFactory.createResponse(eq(ResponseCodeEn.SUCCESS_OPERATION), eq(uploadedFileName)))
+                .thenReturn(ResponseEntity.ok(expectedApiResponse));
 
         // When
         ResponseEntity<ApiResponseTO<Object>> response = fileController.uploadFile(file);
 
         // Then
-        verify(fileService).uploadFile(FileUploadTO.builder().file(file).build());
+        verify(fileService).uploadFile(argThat(fileUploadTO ->
+                fileUploadTO.filePath().equals("media/") &&
+                        fileUploadTO.file().equals(file)
+        ));
+
+        assertNotNull(response); // Ensure response is not null
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedApiResponse, response.getBody());
     }

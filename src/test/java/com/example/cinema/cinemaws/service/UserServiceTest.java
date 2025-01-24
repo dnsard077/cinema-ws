@@ -170,7 +170,7 @@ class UserServiceTest {
         user.setUserId(1L);
         user.setUsername("username");
         List<User> users = Collections.singletonList(user);
-        when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl(users));
+        when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(users));
 
         // When
         Page<User> result = userService.getAllUsers(1, 10, "username", "asc", null, null);
@@ -187,6 +187,36 @@ class UserServiceTest {
         user.setUsername("username");
         user.setPassword("password");
         user.setEmail("invalidEmail");
+
+        doThrow(new ConstraintViolationException(new HashSet<>()))
+                .when(validationService).validate(user);
+
+        // When & Then
+        assertThrows(ConstraintViolationException.class, () -> userService.createUser (user));
+    }
+
+    @Test
+    void givenUserWithEmptyUsername_whenCreateUser_thenThrowException() {
+        // Given
+        User user = new User();
+        user.setUsername("");
+        user.setPassword("password");
+        user.setEmail("email@example.com");
+
+        doThrow(new ConstraintViolationException(new HashSet<>()))
+                .when(validationService).validate(user);
+
+        // When & Then
+        assertThrows(ConstraintViolationException.class, () -> userService.createUser (user));
+    }
+
+    @Test
+    void givenUserWithEmptyEmail_whenCreateUser_thenThrowException() {
+        // Given
+        User user = new User();
+        user.setUsername("username");
+        user.setPassword("password");
+        user.setEmail(""); // Empty email
 
         doThrow(new ConstraintViolationException(new HashSet<>()))
                 .when(validationService).validate(user);

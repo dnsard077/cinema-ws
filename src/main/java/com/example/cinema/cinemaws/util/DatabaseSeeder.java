@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +30,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
-    private final PlanRepository planRepository; // Add PlanRepository
-    private final SubscriptionRepository subscriptionRepository; // Add SubscriptionRepository
+    private final PlanRepository planRepository;
+    private final SubscriptionRepository subscriptionRepository;
     private final Faker faker = new Faker(new Locale("en-US"));
     private final PasswordEncoder passwordEncoder;
 
@@ -110,7 +111,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         log.info("Seeding Plans");
-        // Seed subscription plans
         for (int i = 0; i < 3; i++) {
             Plan plan = new Plan();
             plan.setName("Plan " + (i + 1));
@@ -130,24 +130,24 @@ public class DatabaseSeeder implements CommandLineRunner {
             userRepository.save(user);
 
             // Create a subscription for each user
-            Subscription subscription = new Subscription();
-            subscription.setUser(user);
-            subscription.setPlan(planRepository.findAll().get(ThreadLocalRandom.current().nextInt((int) planRepository.count()))); // Randomly select a plan
-            subscription.setStartDate(LocalDateTime.now());
-            subscription.setEndDate(LocalDateTime.now().plusDays(subscription.getPlan().getDuration()));
-            subscription.setActive(true);
-            subscriptionRepository.save(subscription);
+            List<Plan> plans = planRepository.findAll();
+            if (!plans.isEmpty()) {
+                Subscription subscription = new Subscription();
+                subscription.setUser(user);
+                subscription.setPlan(plans.get(ThreadLocalRandom.current().nextInt(plans.size())));
+                subscription.setStartDate(LocalDateTime.now());
+                subscription.setEndDate(LocalDateTime.now().plusDays(subscription.getPlan().getDuration()));
+                subscription.setActive(true);
+                subscriptionRepository.save(subscription);
+            }
         }
 
         log.info("Seeding Reservation & Payment");
         for (User user : userRepository.findAll()) {
-            Schedule randomSchedule = scheduleRepository.findAll()
-                    .stream()
-                    .skip(ThreadLocalRandom.current().nextInt((int) scheduleRepository.count()))
-                    .findFirst()
-                    .orElse(null);
+            List<Schedule> schedules = scheduleRepository.findAll();
+            if (!schedules.isEmpty()) {
+                Schedule randomSchedule = schedules.get(ThreadLocalRandom.current().nextInt(schedules.size()));
 
-            if (randomSchedule != null) {
                 Reservation reservation = new Reservation();
                 reservation.setUser(user);
                 reservation.setReservationDate(LocalDateTime.now());

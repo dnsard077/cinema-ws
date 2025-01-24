@@ -24,6 +24,11 @@ public class FileService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
 
+    public FileService(S3Client s3Client, String bucketName) {
+        this.s3Client = s3Client;
+        this.bucketName = bucketName;
+    }
+
     public String uploadFile(FileUploadTO fileUploadTO) {
         String fileName = fileUploadTO.fileName() != null ? fileUploadTO.fileName() : fileUploadTO.file().getOriginalFilename();
         String finalName = fileName + "_" + UUID.randomUUID();

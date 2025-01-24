@@ -10,7 +10,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +42,12 @@ public class DatabaseSeederTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private SubscriptionRepository subscriptionRepository;
+
+    @Mock
+    private PlanRepository planRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -54,33 +59,54 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedData() throws Exception {
+    public void givenSeederEnabled_whenRunCalled_thenDataSeededCorrectly() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
 
         // Arrange
-        when(cinemaRepository.findAll()).thenReturn(Collections.emptyList());
+        Cinema cinema1 = new Cinema();
+        cinema1.setName("Cinema 1");
+        Cinema cinema2 = new Cinema();
+        cinema2.setName("Cinema 2");
+        Cinema cinema3 = new Cinema();
+        cinema3.setName("Cinema 3");
+        Cinema cinema4 = new Cinema();
+        cinema4.setName("Cinema 4");
+        Cinema cinema5 = new Cinema();
+        cinema5.setName("Cinema 5");
+        when(cinemaRepository.findAll()).thenReturn(List.of(cinema1, cinema2, cinema3, cinema4, cinema5));
         when(studioRepository.findAll()).thenReturn(Collections.emptyList());
         when(movieRepository.findAll()).thenReturn(Collections.emptyList());
         when(userRepository.findAll()).thenReturn(Collections.emptyList());
         when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+        Plan samplePlan = new Plan();
+        samplePlan.setDuration(30);
+        when(planRepository.findAll()).thenReturn(List.of(samplePlan, samplePlan, samplePlan, samplePlan, samplePlan));
+        when(planRepository.count()).thenReturn(5L);
+        Studio studio1 = new Studio();
+        studio1.setTotalSeats(100);
+        Studio studio2 = new Studio();
+        studio2.setTotalSeats(100);
+        Studio studio3 = new Studio();
+        studio3.setTotalSeats(100);
+        when(studioRepository.findAll()).thenReturn(List.of(studio1, studio2, studio3));
 
         // When
         databaseSeeder.run();
 
         // Then
         verify(cinemaRepository, times(5)).save(any(Cinema.class));
-        verify(studioRepository, times(0)).save(any(Studio.class));
+        verify(studioRepository, times(15)).save(any(Studio.class));
+        verify(seatRepository, times(300)).save(any(Seat.class));
         verify(movieRepository, times(10)).save(any(Movie.class));
         verify(userRepository, times(5)).save(any(User.class));
-        verify(reservationRepository, times(0)).save(any(Reservation.class));
-        verify(paymentRepository, times(0)).save(any(Payment.class));
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedStudios() throws Exception {
+    public void givenNoStudios_whenRunCalled_thenStudiosSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
+
         Cinema cinema = new Cinema();
         cinema.setName("Cinema 1");
         when(cinemaRepository.findAll()).thenReturn(List.of(cinema));
@@ -94,9 +120,10 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedSeats() throws Exception {
+    public void givenStudios_whenRunCalled_thenSeatsSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
+
         Studio studio = new Studio();
         studio.setTotalSeats(100);
         when(studioRepository.findAll()).thenReturn(List.of(studio));
@@ -109,9 +136,10 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedMovies() throws Exception {
+    public void givenNoMovies_whenRunCalled_thenMoviesSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
+
         when(movieRepository.findAll()).thenReturn(Collections.emptyList());
 
         // When
@@ -122,12 +150,14 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedSchedules() throws Exception {
+    public void givenMoviesAndStudios_whenRunCalled_thenSchedulesSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
+
         Movie movie = new Movie();
         Studio studio = new Studio();
         studio.setTotalSeats(1);
+
         when(movieRepository.findAll()).thenReturn(List.of(movie));
         when(studioRepository.findAll()).thenReturn(List.of(studio));
 
@@ -139,12 +169,18 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedUsers() throws Exception {
+    public void givenNoUsers_whenRunCalled_thenUsersSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
-        when(userRepository.findAll()).thenReturn(Collections.emptyList());
+        setSeederEnabled(true);
 
         // When
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+
+        Plan samplePlan = new Plan();
+        samplePlan.setDuration(30);
+        when(planRepository.findAll()).thenReturn(List.of(samplePlan));
+
         databaseSeeder.run();
 
         // Then
@@ -152,18 +188,22 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederEnabled_whenRun_thenSeedReservationsAndPayments() throws Exception {
+    public void givenUsersAndSchedules_whenRunCalled_thenReservationsAndPaymentsSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(true);
+        setSeederEnabled(true);
+
         User user = new User();
         user.setUsername("user1");
+
+        // When
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(reservationRepository.findAll()).thenReturn(Collections.emptyList());
-        List<Schedule> schedules = new ArrayList<>();
-        schedules.add(new Schedule());
-        schedules.add(new Schedule());
-        when(scheduleRepository.findAll()).thenReturn(schedules);
-        // When
+        when(scheduleRepository.findAll()).thenReturn(List.of(new Schedule(), new Schedule()));
+
+        Plan samplePlan = new Plan();
+        samplePlan.setDuration(30);
+        when(planRepository.findAll()).thenReturn(List.of(samplePlan));
+
         databaseSeeder.run();
 
         // Then
@@ -172,22 +212,16 @@ public class DatabaseSeederTest {
     }
 
     @Test
-    public void givenSeederDisabled_whenRun_thenNotSeedData() throws Exception {
+    public void givenSeederDisabled_whenRunCalled_thenNoDataSeeded() throws Exception {
         // Given
-        this.setSeederEnabled(false);
+        setSeederEnabled(false);
 
         // When
         databaseSeeder.run();
 
         // Then
-        verify(cinemaRepository, never()).save(any(Cinema.class));
-        verify(studioRepository, never()).save(any(Studio.class));
-        verify(seatRepository, never()).save(any(Seat.class));
-        verify(movieRepository, never()).save(any(Movie.class));
-        verify(scheduleRepository, never()).save(any(Schedule.class));
-        verify(userRepository, never()).save(any(User.class));
-        verify(reservationRepository, never()).save(any(Reservation.class));
-        verify(paymentRepository, never()).save(any(Payment.class));
+        verifyNoInteractions(cinemaRepository, studioRepository, seatRepository, movieRepository,
+                scheduleRepository, userRepository, reservationRepository, paymentRepository);
     }
 
     private void setSeederEnabled(boolean enabled) throws Exception {
