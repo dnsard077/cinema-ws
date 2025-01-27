@@ -9,6 +9,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,19 +21,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileService {
     private final S3Client s3Client;
+    private final S3TransferManager s3TransferManager;
     private final long partSize = 5 * 1024 * 1024;
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
 
-    public FileService(S3Client s3Client, String bucketName) {
-        this.s3Client = s3Client;
-        this.bucketName = bucketName;
-    }
-
     public String uploadFile(FileUploadTO fileUploadTO) {
-        String fileName = fileUploadTO.fileName() != null ? fileUploadTO.fileName() : fileUploadTO.file().getOriginalFilename();
-        String finalName = fileName + "_" + UUID.randomUUID();
-        String key = fileUploadTO.filePath() + finalName;
+        String fileName = fileUploadTO.fileName() != null ? fileUploadTO.fileName() : UUID.randomUUID() + "_" + fileUploadTO.file().getOriginalFilename();
+        String key = fileUploadTO.filePath() + fileName;
         try (InputStream inputStream = fileUploadTO.file().getInputStream()) {
             s3Client.putObject(PutObjectRequest.builder()
                             .bucket(bucketName)
@@ -40,7 +36,7 @@ public class FileService {
                             .contentType(fileUploadTO.file().getContentType())
                             .build(),
                     RequestBody.fromInputStream(inputStream, fileUploadTO.file().getSize()));
-            return finalName;
+            return fileName;
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
         }

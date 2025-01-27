@@ -43,8 +43,8 @@ public class MovieMediaController {
             @PathVariable Long movieId,
             @RequestParam("file") MultipartFile file
     ) {
-        MovieMedia createdMovieMedia = movieMediaService.createMovieMedia(movieId, file);
-        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_CREATED, createdMovieMedia);
+        movieMediaService.createMovieMedia(movieId, file);
+        return apiResponseFactory.createResponse(ResponseCodeEn.SUCCESS_CREATED);
     }
 
     @PutMapping("/{id}")

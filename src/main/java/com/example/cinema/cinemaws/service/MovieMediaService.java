@@ -7,9 +7,11 @@ import com.example.cinema.cinemaws.model.Movie;
 import com.example.cinema.cinemaws.model.MovieMedia;
 import com.example.cinema.cinemaws.repository.MovieMediaRepository;
 import com.example.cinema.cinemaws.repository.MovieRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -21,10 +23,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,16 +35,21 @@ public class MovieMediaService {
     private final MovieMediaRepository movieMediaRepository;
     private final MovieRepository movieRepository;
     private final FileService fileService;
+    private final SqsClient sqsClient;
+    private final ObjectMapper objectMapper;
+    @Value("${sqs.queue.url}")
+    private String sqsQueueUrl;
 
-    @CachePut(key = "#movieId")
-    public MovieMedia createMovieMedia(Long movieId, MultipartFile file) {
+    public void createMovieMedia(Long movieId, MultipartFile file) {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new ResponseException(ResponseCodeEn.RESOURCE_NOT_FOUND));
         MovieMedia movieMedia = new MovieMedia();
         String extension = FilenameUtils.getExtension(file.getOriginalFilename());
+        String fileName = UUID.randomUUID() + "_" + movie.getTitle() + "." + extension;
+        String key = "movie/" + movie.getMovieId() + "/original/";
         fileService.uploadFile(FileUploadTO.builder()
-                .fileName(movie.getTitle() + UUID.randomUUID())
-                .filePath("movie/")
+                .fileName(fileName)
+                .filePath(key)
                 .file(file)
                 .build());
         movieMedia.setMovie(movie);
@@ -51,7 +58,18 @@ public class MovieMediaService {
         movieMedia.setQuality("4K");
         movieMedia.setFormat(extension);
 
-        return movieMediaRepository.save(movieMedia);
+        Map<String, Object> movieConversionRequest = new HashMap<>();
+        movieConversionRequest.put("fileName", fileName);
+        movieConversionRequest.put("filePath", key);
+        movieConversionRequest.put("movieId", movie.getMovieId());
+        try {
+            sqsClient.sendMessage(SendMessageRequest.builder()
+                    .queueUrl(sqsQueueUrl)
+                    .messageBody(objectMapper.writeValueAsString(movieConversionRequest))
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Cacheable

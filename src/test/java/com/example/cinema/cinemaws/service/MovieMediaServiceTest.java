@@ -1,13 +1,11 @@
 package com.example.cinema.cinemaws.service;
 
 import com.example.cinema.cinemaws.dto.FileUploadTO;
-import com.example.cinema.cinemaws.dto.ResponseCodeEn;
 import com.example.cinema.cinemaws.exception.ResponseException;
 import com.example.cinema.cinemaws.model.Movie;
 import com.example.cinema.cinemaws.model.MovieMedia;
 import com.example.cinema.cinemaws.repository.MovieMediaRepository;
 import com.example.cinema.cinemaws.repository.MovieRepository;
-import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,7 +17,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,11 +56,9 @@ class MovieMediaServiceTest {
         when(movieMediaRepository.save(any(MovieMedia.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        MovieMedia result = movieMediaService.createMovieMedia(movieId, file);
+        movieMediaService.createMovieMedia(movieId, file);
 
         // Then
-        assertNotNull(result);
-        assertEquals("Test Movie.mp4", result.getFileName());
         verify(movieRepository).findById(movieId);
         verify(fileService).uploadFile(any(FileUploadTO.class));
         verify(movieMediaRepository).save(any(MovieMedia.class));

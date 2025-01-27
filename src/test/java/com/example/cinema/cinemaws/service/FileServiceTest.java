@@ -1,6 +1,5 @@
 package com.example.cinema.cinemaws.service;
 
-import com.example.cinema.cinemaws.dto.FileUploadResTO;
 import com.example.cinema.cinemaws.dto.FileUploadTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,15 +12,16 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,14 +30,20 @@ class FileServiceTest {
     @Mock
     private S3Client s3Client;
 
+    @Mock
+    private S3TransferManager s3TransferManager;
+
     @InjectMocks
     private FileService fileService;
 
     private String bucketName = "test-bucket";
 
     @BeforeEach
-    void setUp() {
-        fileService = new FileService(s3Client, bucketName);
+    void setUp() throws IllegalAccessException, NoSuchFieldException {
+        fileService = new FileService(s3Client, s3TransferManager);
+        Field field = FileService.class.getDeclaredField("bucketName");
+        field.setAccessible(true);
+        field.set(fileService, bucketName);
     }
 
     @Test
